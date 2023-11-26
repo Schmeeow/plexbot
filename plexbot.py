@@ -96,7 +96,7 @@ def search_by_string(message):
         for part in split_str(replyStringFoundMovies, 4090):
              bot.reply_to(message, part)
         for child in rootSeries.iter('Directory'):
-              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
+              if searchString.casefold() in child.attrib['title'].casefold():
                  cntFoundSeries += 1
                  replyStringFoundSeries = replyStringFoundSeries + str(cntFoundSeries) + '. ' + child.attrib['title']  + ' (' + child.attrib['childCount'] + ' seasons, '  + child.attrib['leafCount']+ ' episodes)' + "\n"
         if cntFoundSeries == 0:
