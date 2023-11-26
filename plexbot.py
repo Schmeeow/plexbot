@@ -6,7 +6,6 @@ import time
 urlHandleMovies = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/1/all") # URL OF THE PLEX MOVIES LIST
 urlHandleSeries = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/2/all") # URL OF THE PLEX TV SERIES LIST
 
-keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
 keyboard1 = telebot.types.ReplyKeyboardMarkup(True)
 keyboard1.row('Back')
 
