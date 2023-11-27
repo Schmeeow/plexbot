@@ -6,9 +6,6 @@ import time
 urlHandleMovies = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/1/all") # URL OF THE PLEX MOVIES LIST
 urlHandleSeries = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/2/all") # URL OF THE PLEX TV SERIES LIST
 
-keyboard1 = telebot.types.ReplyKeyboardMarkup(True)
-keyboard1.row('Back')
-
 def split_str(seq, chunk, skip_tail=False):  ### LONG STRING SPLITTER FOR TELEGRAM MESSAGES
     lst = []
     if chunk <= len(seq):
@@ -75,7 +72,7 @@ def list_command(message):
 @bot.message_handler(content_types=['text']) ### BOT RESPONSE TO THE \search COMMAND
 def search_command(message):
     if message.text == '/search':
-        msg = bot.send_message(message.from_user.id, 'Search string: ', reply_markup = keyboard1)
+        msg = bot.send_message(message.from_user.id, 'Search string: ')
         bot.register_next_step_handler(msg, search_by_string)
 
 def search_by_string(message):
