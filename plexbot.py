@@ -31,7 +31,6 @@ bot = telebot.TeleBot(token)
 def send_welcome(message):
         bot.reply_to(message, "Hi! Select a command from the menu below")
 
-
 @bot.message_handler(commands=['new'])  ### BOT RESPONSE TO THE \new COMMAND
 def send_new(message):
         cntNewMovies = 0
@@ -73,13 +72,11 @@ def list_command(message):
         for part in split_str(replyStringSeries, 4090):
              bot.reply_to(message, part)
 
-
 @bot.message_handler(content_types=['text']) ### BOT RESPONSE TO THE \search COMMAND
 def search_command(message):
     if message.text == '/search':
         msg = bot.send_message(message.from_user.id, 'Search string: ', reply_markup = keyboard1)
         bot.register_next_step_handler(msg, search_by_string)
-...
 
 def search_by_string(message):
         cntFoundMovies = 0
