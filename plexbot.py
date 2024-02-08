@@ -1,12 +1,58 @@
 import telebot
 import xml.etree.ElementTree as ET
 import urllib.request
+import datetime
 import time
 
-urlHandleMovies = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/1/all") # URL OF THE PLEX MOVIES LIST
-urlHandleSeries = urllib.request.urlopen("http://192.168.1.111:32400/library/sections/2/all") # URL OF THE PLEX TV SERIES LIST
+### CONFIG
 
-def split_str(seq, chunk, skip_tail=False):  ### LONG STRING SPLITTER FOR TELEGRAM MESSAGES
+BOT_TOKEN = ''
+
+ALLOWED_USERS = (11111111,22222222,3333333)
+
+PLEX_SERVER_CONFIG = {
+                      'url':'http://192.168.1.111',
+                      'port':'32400',
+                      'libraries':[{
+                                     'name' : 'ФИЛЬМЫ',
+                                     'type' : 'movies',
+                                     'id' : '1'
+                                   },
+                                   {
+                                     'name' : 'СEРИАЛЫ',
+                                     'type' : 'series',
+                                     'id' : '2'
+                                   },
+                                   {
+                                     'name' : 'МУЛЬФИЛЬМЫ',
+                                     'type' : 'movies',
+                                     'id' : '3'
+                                   },
+                                   {
+                                     'name' : 'МУЛЬТСЕРИАЛЫ',
+                                     'type' : 'series',
+                                     'id' : '4'
+                                   },
+                                   {
+                                     'name' : 'ДОКУМЕНТАЛКИ',
+                                     'type' : 'series',
+                                     'id' : '8'}]
+                                   }
+
+FRESH_DAYS = 14
+
+### FUNCTIONS
+
+libRoots = {}
+
+def load_and_parse ():
+    for library in PLEX_SERVER_CONFIG['libraries']:
+        url = PLEX_SERVER_CONFIG['url'] + ":" + PLEX_SERVER_CONFIG['port'] + "/library/sections/" + library['id'] + "/all"
+        urlHandle = urllib.request.urlopen(url)
+        parsedHandle = ET.parse(urlHandle)
+        libRoots[str(library['name'])] = parsedHandle.getroot()
+
+def split_str(seq, chunk, skip_tail=False):
     lst = []
     if chunk <= len(seq):
         lst.extend([seq[:chunk]])
@@ -15,90 +61,91 @@ def split_str(seq, chunk, skip_tail=False):  ### LONG STRING SPLITTER FOR TELEGR
         lst.extend([seq])
     return lst
 
-treeMovies = ET.parse(urlHandleMovies)
-rootMovies = treeMovies.getroot()
-treeSeries = ET.parse(urlHandleSeries)
-rootSeries = treeSeries.getroot()
+def log_request(message):
+    with open("plexbot.log", "a") as logfile:
+        logfile.write(str(message.chat.id) + " " + str(datetime.datetime.now()) + ": " +  str(message.text) + "\n")
 
-token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # TELEGRAM TOKEN FOR YOUR BOT
+def get_all(freshness=10000):
+    i = 0
+    replyString = ""
+    freshness = freshness*24*60*60
+    for lib in libRoots:
+        library = PLEX_SERVER_CONFIG['libraries'][i]
+        replyString = replyString + "\n" + library['name']  + ":" + "\n"
+        if library['type'] == "movies":
+           counter = 0
+           for child in libRoots[lib].iter('Video'):
+              if (int(time.time()) - freshness) <= int(child.attrib['addedAt']):
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' + child.attrib['year'] + ')' + "\n"
+        else:
+           for child in libRoots[lib].iter('Directory'):
+              if (int(time.time()) - freshness) <= int(child.attrib['addedAt']):
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' +  child.attrib['childCount'] + ' сезонов, '  + child.attrib['leafCount']+ ' серий)' + "\n"
+        if counter == 0:
+                 replyString = replyString + 'Ничего не найдено\n'
+        i += 1
+        counter = 0
+    return(replyString)
 
-bot = telebot.TeleBot(token)
+## BOT ACTIONS
+
+bot = telebot.TeleBot(BOT_TOKEN)
+
+@bot.message_handler(func=lambda message: message.chat.id not in ALLOWED_USERS)
+def auth_failed(message):
+        bot.send_message(message.chat.id, "Доступ запрещен. Попросите администратора бота добавить вас в белый лист")
+        log_request(message)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-        bot.reply_to(message, "Hi! Select a command from the menu below")
-
-@bot.message_handler(commands=['new'])  ### BOT RESPONSE TO THE \new COMMAND
-def send_new(message):
-        cntNewMovies = 0
-        cntNewSeries = 0
-        replyStringNewMovies = '~~~ MEW MOVIES (ADDED IN LAST 14 DAYS) ~~~' + '\n'
-        replyStringNewSeries = '~~~ NEW SERIES (ADDED IN LAST 14 DAYS) ~~~' + '\n'
-        for child in rootMovies.iter('Video'):
-              if (time.time() - int(child.attrib['addedAt']) <= 1209600):  ### 14 DAYS IN SECONDS
-                 cntNewMovies += 1
-                 replyStringNewMovies = replyStringNewMovies + str(cntNewMovies) + '. ' + child.attrib['title'] + ' ('+ child.attrib['year']+ ')' + "\n"
-        if cntNewMovies == 0:
-                 replyStringNewMovies =  'No new movies'
-        for part in split_str(replyStringNewMovies, 4090):
-             bot.reply_to(message, part)
-        for child in rootSeries.iter('Directory'):
-              if (time.time() - int(child.attrib['addedAt']) <= 1209600):
-                 cntNewSeries += 1
-                 replyStringNewSeries = replyStringNewSeries + str(cntNewSeries) + '. ' + child.attrib['title'] + ' ('+ child.attrib['year']+ ')' + "\n"
-        if cntNewSeries == 0:
-                 replyStringNewSeries =  'Now new series'
-        for part in split_str(replyStringNewSeries, 4090):
-             bot.reply_to(message, part)
+        bot.reply_to(message, "Алоха! Жми на кнопку МЕНЮ внизу и выбирай команду")
 
 
-@bot.message_handler(commands=['list'])  ### BOT RESPONSE TO THE \list COMMAND
-def list_command(message):
-        cntMovies = 0
-        cntSeries = 0
-        replyStringMovies = '~~~ ALL MOVIES ~~~' + '\n'
-        replyStringSeries = '~~~ ALL SERIES ~~~' + '\n'
-        for child in rootMovies.iter('Video'):
-              cntMovies += 1
-              replyStringMovies = replyStringMovies + str(cntMovies) + '. ' + child.attrib['title'] + ' ('+ child.attrib['year']+ ')' + "\n"
-        for part in split_str(replyStringMovies, 4090):
-             bot.reply_to(message, part)
-        for child in rootSeries.iter('Directory'):
-                 cntSeries += 1
-                 replyStringSeries = replyStringSeries + str(cntSeries) + '. ' + child.attrib['title'] + ' (' + child.attrib['childCount'] + ' seasons, '  + child.attrib['leafCount']+ ' episodes)' + "\n"
-        for part in split_str(replyStringSeries, 4090):
-             bot.reply_to(message, part)
+@bot.message_handler(commands=['new'])
+def list_new(message):
+        load_and_parse()
+        for part in split_str(get_all(FRESH_DAYS), 4080):
+            bot.send_message(message.chat.id, part)
 
-@bot.message_handler(content_types=['text']) ### BOT RESPONSE TO THE \search COMMAND
+@bot.message_handler(commands=['list'])
+def list_all(message):
+        load_and_parse()
+        for part in split_str(get_all(), 4080):
+            bot.send_message(message.chat.id, part)
+
+@bot.message_handler(content_types=['text'])
 def search_command(message):
     if message.text == '/search':
-        msg = bot.send_message(message.from_user.id, 'Search string: ')
+        msg = bot.send_message(message.from_user.id, 'Введите поисковый запрос: ')
         bot.register_next_step_handler(msg, search_by_string)
 
 def search_by_string(message):
-        cntFoundMovies = 0
-        cntFoundSeries = 0
-        replyStringFoundMovies = '~~~ FOUND IN MOVIES ~~~' + '\n'
-        replyStringFoundSeries = '~~~ FOUND IN SERIES ~~~' + '\n'
-        for child in rootMovies.iter('Video'):
-              if searchString.casefold() in child.attrib['title'].casefold():
-                 cntFoundMovies += 1
-                 replyStringFoundMovies = replyStringFoundMovies + str(cntFoundMovies) + '. ' + child.attrib['title'] + ' ('+ child.attrib['year']+ ')' + '\n'
-        if cntFoundMovies == 0: 
-                 replyStringFoundMovies =  'No movies found' 
-        for part in split_str(replyStringFoundMovies, 4090):
-             bot.reply_to(message, part)
-        for child in rootSeries.iter('Directory'):
-              if searchString.casefold() in child.attrib['title'].casefold():
-                 cntFoundSeries += 1
-                 replyStringFoundSeries = replyStringFoundSeries + str(cntFoundSeries) + '. ' + child.attrib['title']  + ' (' + child.attrib['childCount'] + ' seasons, '  + child.attrib['leafCount']+ ' episodes)' + "\n"
-        if cntFoundSeries == 0:
-                 replyStringFoundSeries =  'No series found'
-        for part in split_str(replyStringFoundSeries, 4090):
-             bot.reply_to(message, part)
+    load_and_parse()
+    searchString = message.text.replace('ё', 'е')
+    i = 0
+    replyString = ""
+    for lib in libRoots:
+        library = PLEX_SERVER_CONFIG['libraries'][i]
+        replyString = replyString + "\n" + library['name']  + ":" + "\n"
+        if library['type'] == "movies":
+           counter = 0
+           for child in libRoots[lib].iter('Video'):
+              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' + child.attrib['year'] + ')' + "\n"
+        else:
+           for child in libRoots[lib].iter('Directory'):
+              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' +  child.attrib['childCount'] + ' сезонов, '  + child.attrib['leafCount']+ ' серий)' + "\n"
+        if counter == 0:
+                 replyString = replyString + 'Ничего не найдено\n'
+        i += 1
+        counter = 0
+
+    for part in split_str(replyString, 4080):
+        bot.send_message(message.chat.id, part)
 
 bot.infinity_polling()
-
-
-
-
