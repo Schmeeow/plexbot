@@ -1,5 +1,6 @@
-# plexbot
-Simple Telegram bot for PLEX media server
+# simplexbot
+
+Simple Telegram bot for your PLEX media server
 
 This telegram bot can read data from PLEX mediaserver library and send it to telegram user in a response for basic commands:
 
