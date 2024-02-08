@@ -12,34 +12,33 @@ ALLOWED_USERS = (11111111,22222222,3333333)  #список разрешенны�
 
 # настройки сервера и библиотек. XML-файлы библиотек обычно лежат по адресу вида 'http://SERVER_IP:32400/library/sections/ID/all, ID обычно идут по порядку. поддерживается только два вида медиа - Movies и Series
 
-PLEX_SERVER_CONFIG = {                            
-                      'url':'http://192.168.1.111',   
-                      'port':'32400',
-                      'libraries':[{
+PLEX_SERVER_CONFIG = { 'url':'http://192.168.1.111',   
+                       'port':'32400',
+                       'libraries':[{
                                      'name' : 'ФИЛЬМЫ',
                                      'type' : 'movies',
                                      'id' : '1'
-                                   },
-                                   {
+                                    },
+                                    {
                                      'name' : 'СEРИАЛЫ',
                                      'type' : 'series',
                                      'id' : '2'
-                                   },
-                                   {
+                                    },
+                                    {
                                      'name' : 'МУЛЬФИЛЬМЫ',
                                      'type' : 'movies',
                                      'id' : '3'
-                                   },
-                                   {
+                                    },
+                                    {
                                      'name' : 'МУЛЬТСЕРИАЛЫ',
                                      'type' : 'series',
                                      'id' : '4'
-                                   },
-                                   {
+                                    },
+                                    {
                                      'name' : 'ДОКУМЕНТАЛКИ',
                                      'type' : 'series',
                                      'id' : '8'}]
-                                   }
+                                    }
 
 FRESH_DAYS = 14  #сколько дней должно пройти, чтобы медиа перестало считаться новым
 
@@ -62,10 +61,6 @@ def split_str(seq, chunk, skip_tail=False):
     elif not skip_tail and seq:
         lst.extend([seq])
     return lst
-
-def log_request(message):
-    with open("plexbot.log", "a") as logfile:
-        logfile.write(str(message.chat.id) + " " + str(datetime.datetime.now()) + ": " +  str(message.text) + "\n")
 
 def get_all(freshness=10000):
     i = 0
@@ -97,8 +92,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(func=lambda message: message.chat.id not in ALLOWED_USERS)
 def auth_failed(message):
-        bot.send_message(message.chat.id, "Доступ запрещен. Попросите администратора бота добавить вас в белый лист")
-        log_request(message)
+        bot.send_message(message.chat.id, "Доступ запрещен. Попросите администратора бота добавить вас в белый лист.")
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
