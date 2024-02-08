@@ -6,12 +6,14 @@ import time
 
 ### CONFIG
 
-BOT_TOKEN = ''
+BOT_TOKEN = ''  # токен бота
 
-ALLOWED_USERS = (11111111,22222222,3333333)
+ALLOWED_USERS = (11111111,22222222,3333333)  #список разрешенных пользователей (telegram.user.id)
 
-PLEX_SERVER_CONFIG = {
-                      'url':'http://192.168.1.111',
+# настройки сервера и библиотек. XML-файлы библиотек обычно лежат по адресу вида 'http://SERVER_IP:32400/library/sections/ID/all, ID обычно идут по порядку. поддерживается только два вида медиа - Movies и Series
+
+PLEX_SERVER_CONFIG = {                            
+                      'url':'http://192.168.1.111',   
                       'port':'32400',
                       'libraries':[{
                                      'name' : 'ФИЛЬМЫ',
@@ -39,7 +41,7 @@ PLEX_SERVER_CONFIG = {
                                      'id' : '8'}]
                                    }
 
-FRESH_DAYS = 14
+FRESH_DAYS = 14  #сколько дней должно пройти, чтобы медиа перестало считаться новым
 
 ### FUNCTIONS
 
