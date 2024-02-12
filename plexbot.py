@@ -125,7 +125,6 @@ def auth_failed(message):
 def send_welcome(message):
         bot.reply_to(message, "Алоха! Жми на кнопку МЕНЮ внизу и выбирай команду")
 
-
 @bot.message_handler(commands=['new'])
 def list_new(message):
         load_and_parse()
