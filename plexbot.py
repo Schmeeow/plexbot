@@ -86,6 +86,33 @@ def get_all(freshness=10000):
         counter = 0
     return(replyString)
 
+def search_by_string(message):
+    load_and_parse()
+    searchString = message.text.replace('ё', 'е')
+    i = 0
+    replyString = ""
+    for lib in libRoots:
+        library = PLEX_SERVER_CONFIG['libraries'][i]
+        replyString = replyString + "\n" + library['name']  + ":" + "\n"
+        if library['type'] == "movies":
+           counter = 0
+           for child in libRoots[lib].iter('Video'):
+              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' + child.attrib['year'] + ')' + "\n"
+        else:
+           for child in libRoots[lib].iter('Directory'):
+              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
+                 counter += 1
+                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' +  child.attrib['childCount'] + ' сезонов, '  + child.attrib['leafCount']+ ' серий)' + "\n"
+        if counter == 0:
+                 replyString = replyString + 'Ничего не найдено\n'
+        i += 1
+        counter = 0
+
+    for part in split_str(replyString, 4080):
+        bot.send_message(message.chat.id, part)
+
 ## BOT ACTIONS
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -116,32 +143,5 @@ def search_command(message):
     if message.text == '/search':
         msg = bot.send_message(message.from_user.id, 'Введите поисковый запрос: ')
         bot.register_next_step_handler(msg, search_by_string)
-
-def search_by_string(message):
-    load_and_parse()
-    searchString = message.text.replace('ё', 'е')
-    i = 0
-    replyString = ""
-    for lib in libRoots:
-        library = PLEX_SERVER_CONFIG['libraries'][i]
-        replyString = replyString + "\n" + library['name']  + ":" + "\n"
-        if library['type'] == "movies":
-           counter = 0
-           for child in libRoots[lib].iter('Video'):
-              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
-                 counter += 1
-                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' + child.attrib['year'] + ')' + "\n"
-        else:
-           for child in libRoots[lib].iter('Directory'):
-              if searchString.casefold() in child.attrib['title'].replace('ё', 'е').casefold():
-                 counter += 1
-                 replyString = replyString + str(counter) + '. ' + child.attrib['title'] + ' (' +  child.attrib['childCount'] + ' сезонов, '  + child.attrib['leafCount']+ ' серий)' + "\n"
-        if counter == 0:
-                 replyString = replyString + 'Ничего не найдено\n'
-        i += 1
-        counter = 0
-
-    for part in split_str(replyString, 4080):
-        bot.send_message(message.chat.id, part)
 
 bot.infinity_polling()
